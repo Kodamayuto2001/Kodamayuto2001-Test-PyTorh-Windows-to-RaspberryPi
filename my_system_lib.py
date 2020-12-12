@@ -80,21 +80,9 @@ class Suiron:
             for (x,y,w,h) in facerect:
                 cv2.rectangle(imgResult,(x,y),(x+w,y+h),self.COLOR,thickness=2)
                 imgTrim = img[y:y+h,x:x+w]
-                p = self.maesyori_suiron(imgTrim,self.inputSize)
-                if p == 0:
-                    str_y = "ando   "
-                if p == 1:
-                    str_y = "higashi"
-                if p == 2:
-                    str_y = "kataoka"
-                if p == 3:
-                    str_y = "kodama "
-                if p == 4:
-                    str_y = "masuda "
-                if p == 5:
-                    str_y = "suetomo"
+                str_y,percent = self.maesyori_suiron(imgTrim,self.inputSize)
 
-                cv2.putText(imgResult, str_y, (40, 40), cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
+                cv2.putText(imgResult, str_y+" "+str(percent)+"%", (40, 40), cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
                 cv2.putText(imgResult,"Body TEMP",(40,40*2),cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
                 cv2.putText(imgResult,self.BODY_TEMP,(40,40*3),cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
                 cv2.imshow("Image",imgResult)
@@ -137,10 +125,34 @@ class Suiron:
         #予測値
         p = self.model.forward(mInput)
 
-        #予測値出力
-        # print(p)
-        # print(p.argmax())
-        # print(type(p))
+        #予測値のパーセンテージ
+        m = torch.nn.Softmax(dim=1)
+        x = m(p)
+        x = x.to('cpu').detach().numpy().copy() 
+        x = x[0]
+        # すべての中で最も大きい値
+        p = p.argmax()
 
-        # 戻り値は予測値
-        return p.argmax()
+        percent = 0
+
+        if p == 0:
+            str_y = "ando   "
+            percent = x[0]*100
+        if p == 1:
+            str_y = "higashi"
+            percent = x[1]*100
+        if p == 2:
+            str_y = "kataoka"
+            percent = x[2]*100
+        if p == 3:
+            str_y = "kodama "
+            percent = x[3]*100
+        if p == 4:
+            str_y = "masuda "
+            percent = x[4]*100
+        if p == 5:
+            str_y = "suetomo"
+            percent = x[5]*100
+
+        # 戻り値は予測値とパーセンテージ
+        return str_y,percent
