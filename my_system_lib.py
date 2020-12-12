@@ -45,20 +45,21 @@ class Net(torch.nn.Module):
 
 class Suiron:
     CAP_CHANNEL         = 0
-    WINDOW_WIDTH        = 1920
-    WINDOW_HEIGHT       = 1080
-    FRAME_WIDTH         = 500
-    FRAME_HEIGHT        = 500
+    WINDOW_WIDTH        = 720
+    WINDOW_HEIGHT       = 480
+    FRAME_WIDTH         = 300
+    FRAME_HEIGHT        = 300
     x                   = 100
     y                   = 100
     COLOR               = (255,0,255)
     CASCADEPATH         = "haarcascades/haarcascade_frontalface_default.xml"
+    MOJI_OOKISA         = 1.0
     # ---------- 学習の時と同じパラメータでなければならない ---------- #
     inputSize           = 160
     model               = Net(num=6,inputSize=inputSize,Neuron=320)
     PATH                = "models/nn1.pt"
     str_y               = "-------"
-    tmp_file_path_w     = "tmp.txt"
+    BODY_TEMP           = "36.5"
 
     def __init__(self):
         self.cap = cv2.VideoCapture(self.CAP_CHANNEL)
@@ -67,6 +68,7 @@ class Suiron:
         self.cascade = cv2.CascadeClassifier(self.CASCADEPATH)
         self.model.load_state_dict(torch.load(self.PATH))
         self.model.eval()
+        
 
     def real_time_haar(self):
         success,img = self.cap.read()
@@ -92,7 +94,9 @@ class Suiron:
                 if p == 5:
                     str_y = "suetomo"
 
-                cv2.putText(imgResult, str_y, (100, 100), cv2.FONT_HERSHEY_SIMPLEX,2.0,self.COLOR,thickness=2)
+                cv2.putText(imgResult, str_y, (40, 40), cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
+                cv2.putText(imgResult,"Body TEMP",(40,40*2),cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
+                cv2.putText(imgResult,self.BODY_TEMP,(40,40*3),cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
                 cv2.imshow("Image",imgResult)
                 cv2.waitKey(100)
 
@@ -100,6 +104,7 @@ class Suiron:
         else:
             str_y = "-------"
             cv2.rectangle(img,(self.x,self.y),(self.x+self.FRAME_WIDTH,self.y+self.FRAME_HEIGHT),self.COLOR,thickness=10)
+            cv2.putText(img, "Set Face", (40*2, 40*2), cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA*2,self.COLOR,thickness=4)
             cv2.imshow("Image",img)
             H,W,C = img.shape
             self.x = int((W - self.FRAME_WIDTH)/2)
