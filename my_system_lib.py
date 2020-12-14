@@ -60,6 +60,7 @@ class Suiron:
     PATH                = "models/nn1.pt"
     str_y               = "-------"
     BODY_TEMP           = "36.5"
+    DELAY_MSEC          = 100
 
     def __init__(self):
         self.cap = cv2.VideoCapture(self.CAP_CHANNEL)
@@ -86,7 +87,7 @@ class Suiron:
                 cv2.putText(imgResult,"Body TEMP",(40,40*2),cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
                 cv2.putText(imgResult,self.BODY_TEMP,(40,40*3),cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
                 cv2.imshow("Image",imgResult)
-                cv2.waitKey(100)
+                cv2.waitKey(self.DELAY_MSEC)
 
                 return str_y
         else:
@@ -97,7 +98,7 @@ class Suiron:
             H,W,C = img.shape
             self.x = int((W - self.FRAME_WIDTH)/2)
             self.y = int((H - self.FRAME_HEIGHT)/2)
-            cv2.waitKey(100)
+            cv2.waitKey(self.DELAY_MSEC)
             return str_y
             
     
@@ -160,4 +161,5 @@ class Suiron:
     def imshow(self,path):
         img = cv2.imread(path)
         cv2.imshow("Thermo sensor",img)
+        cv2.waitKey(self.DELAY_MSEC)
         # cv2.moveWindow("Thermo sensor",self.WINDOW_WIDTH,int(self.WINDOW_HEIGHT/2))
