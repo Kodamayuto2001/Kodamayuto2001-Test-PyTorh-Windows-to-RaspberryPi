@@ -156,3 +156,8 @@ class Suiron:
 
         # 戻り値は予測値とパーセンテージ
         return str_y,percent
+
+    def imshow(self,path):
+        img = cv2.imread(path)
+        cv2.imshow("Thermo sensor",img)
+        # cv2.moveWindow("Thermo sensor",self.WINDOW_WIDTH,int(self.WINDOW_HEIGHT/2))
