@@ -44,7 +44,7 @@ class Net(torch.nn.Module):
 #             cv2.waitKey(100)
 
 class Suiron:
-    CAP_CHANNEL         = 0
+    CAP_CHANNEL         = 1
     WINDOW_WIDTH        = 720
     WINDOW_HEIGHT       = 480
     FRAME_WIDTH         = 300
@@ -124,36 +124,50 @@ class Suiron:
         output = self.model(mInput[0])
 
         #予測値
-        p = self.model.forward(mInput)
+        # p0 = self.model.forward(mInput)
+        p1 = self.model.forward(mInput).exp()
 
         #予測値のパーセンテージ
-        m = torch.nn.Softmax(dim=1)
-        x = m(p)
-        x = x.to('cpu').detach().numpy().copy() 
-        x = x[0]
+        # m = torch.nn.Softmax(dim=1)
+        # x0 = m(p0)
+        # x0 = x0.to('cpu').detach().numpy().copy() 
+        # x0 = x0[0]
+        x1 = p1.to('cpu').detach().numpy().copy() 
+        x1 = x1[0]
         # すべての中で最も大きい値
-        p = p.argmax()
-
+        p1 = p1.argmax()
         percent = 0
 
-        if p == 0:
+        if p1 == 0:
             str_y = "ando   "
-            percent = x[0]*100
-        if p == 1:
+            percent = x1[0]*100
+            # print(percent)
+            # print(x1[0]*100)
+        if p1 == 1:
             str_y = "higashi"
-            percent = x[1]*100
-        if p == 2:
+            percent = x1[1]*100
+            # print(percent)
+            # print(x1[1]*100)
+        if p1 == 2:
             str_y = "kataoka"
-            percent = x[2]*100
-        if p == 3:
+            percent = x1[2]*100
+            # print(percent)
+            # print(x1[2]*100)
+        if p1 == 3:
             str_y = "kodama "
-            percent = x[3]*100
-        if p == 4:
+            percent = x1[3]*100
+            # print(percent)
+            # print(x1[3]*100)
+        if p1 == 4:
             str_y = "masuda "
-            percent = x[4]*100
-        if p == 5:
+            percent = x1[4]*100
+            # print(percent)
+            # print(x1[4]*100)
+        if p1 == 5:
             str_y = "suetomo"
-            percent = x[5]*100
+            percent = x1[5]*100
+            # print(percent)
+            # print(x1[5]*100)
 
         # 戻り値は予測値とパーセンテージ
         return str_y,percent
