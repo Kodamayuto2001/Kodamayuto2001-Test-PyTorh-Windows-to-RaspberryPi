@@ -44,7 +44,7 @@ class Net(torch.nn.Module):
 #             cv2.waitKey(100)
 
 class Suiron:
-    CAP_CHANNEL         = 1
+    CAP_CHANNEL         = 0
     WINDOW_WIDTH        = 720
     WINDOW_HEIGHT       = 480
     FRAME_WIDTH         = 300
@@ -58,9 +58,16 @@ class Suiron:
     inputSize           = 160
     model               = Net(num=6,inputSize=inputSize,Neuron=320)
     PATH                = "models/nn1.pt"
-    str_y               = "-------"
     BODY_TEMP           = "36.5"
     DELAY_MSEC          = 100
+
+    CNT_ANDO            =   0
+    CNT_HIGASHI         =   0
+    CNT_KATAOKA         =   0
+    CNT_KODAMA          =   0
+    CNT_MASUDA          =   0
+    CNT_SUETOMO         =   0
+    CNT                 =   0
 
     def __init__(self):
         self.cap = cv2.VideoCapture(self.CAP_CHANNEL)
@@ -81,7 +88,7 @@ class Suiron:
             for (x,y,w,h) in facerect:
                 cv2.rectangle(imgResult,(x,y),(x+w,y+h),self.COLOR,thickness=2)
                 imgTrim = img[y:y+h,x:x+w]
-                str_y,percent = self.maesyori_suiron(imgTrim,self.inputSize)
+                str_y,percent,ld = self.maesyori_suiron(imgTrim,self.inputSize)
 
                 cv2.putText(imgResult, str_y+" "+str(percent)+"%", (40, 40), cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
                 cv2.putText(imgResult,"Body TEMP",(40,40*2),cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
@@ -89,7 +96,7 @@ class Suiron:
                 cv2.imshow("Image",imgResult)
                 cv2.waitKey(self.DELAY_MSEC)
 
-                return str_y
+                return ld
         else:
             str_y = "-------"
             cv2.rectangle(img,(self.x,self.y),(self.x+self.FRAME_WIDTH,self.y+self.FRAME_HEIGHT),self.COLOR,thickness=10)
@@ -139,38 +146,81 @@ class Suiron:
         percent = 0
 
         if p1 == 0:
+            self.CNT_ANDO       +=  1
             str_y = "ando   "
             percent = x1[0]*100
             # print(percent)
             # print(x1[0]*100)
         if p1 == 1:
+            self.CNT_HIGASHI    +=  1
             str_y = "higashi"
             percent = x1[1]*100
             # print(percent)
             # print(x1[1]*100)
         if p1 == 2:
+            self.CNT_KATAOKA    +=  1
             str_y = "kataoka"
             percent = x1[2]*100
             # print(percent)
             # print(x1[2]*100)
         if p1 == 3:
+            self.CNT_KODAMA     +=  1
             str_y = "kodama "
             percent = x1[3]*100
             # print(percent)
             # print(x1[3]*100)
         if p1 == 4:
+            self.CNT_MASUDA     +=  1
             str_y = "masuda "
             percent = x1[4]*100
             # print(percent)
             # print(x1[4]*100)
         if p1 == 5:
+            self.CNT_SUETOMO    +=  1
             str_y = "suetomo"
             percent = x1[5]*100
             # print(percent)
             # print(x1[5]*100)
 
-        # 戻り値は予測値とパーセンテージ
-        return str_y,percent
+        cnt_list    =   [
+            self.CNT_ANDO,
+            self.CNT_HIGASHI,
+            self.CNT_KATAOKA,
+            self.CNT_KODAMA,
+            self.CNT_MASUDA,
+            self.CNT_SUETOMO
+        ]
+        self.CNT    +=  1
+
+        s = "-------"
+        #   リセット
+        if self.CNT == 10:
+            max_value   =   max(cnt_list)
+            max_index   =   cnt_list.index(max_value)
+            if max_index == 0:
+                s = "ando   "
+            if max_index == 1:
+                s = "higashi"
+            if max_index == 2:
+                s = "kataoka"
+            if max_index == 3:
+                s = "kodama "
+            if max_index == 4:
+                s = "masuda "
+            if max_index == 5:
+                s = "suetomo"
+            self.CNT        = 0
+            self.CNT_ANDO   = 0
+            self.CNT_HIGASHI= 0
+            self.CNT_KATAOKA= 0
+            self.CNT_KODAMA = 0
+            self.CNT_MASUDA = 0
+            self.CNT_SUETOMO= 0
+
+        
+
+        # 戻り値は予測値とパーセンテージ,確実な値
+        return str_y,percent,s
 
     def imshow(self,path):
         img = cv2.imread(path)
