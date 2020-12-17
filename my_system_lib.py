@@ -51,15 +51,17 @@ class Suiron:
     FRAME_HEIGHT        = 300
     x                   = 100
     y                   = 100
-    COLOR               = (255,0,255)
+    COLOR               = (255,0,0)
     CASCADEPATH         = "haarcascades/haarcascade_frontalface_default.xml"
     MOJI_OOKISA         = 1.0
     # ---------- 学習の時と同じパラメータでなければならない ---------- #
     inputSize           = 160
     model               = Net(num=6,inputSize=inputSize,Neuron=320)
     PATH                = "models/nn1.pt"
-    BODY_TEMP           = "36.5"
-    DELAY_MSEC          = 100
+    BODY_TEMP           = 36.5
+    BODY_TEMP_SAFE      = (255,0,0)
+    BODY_TEMP_OUT       = (255,0,255)
+    DELAY_MSEC          = 1
 
     CNT_ANDO            =   0
     CNT_HIGASHI         =   0
@@ -68,6 +70,8 @@ class Suiron:
     CNT_MASUDA          =   0
     CNT_SUETOMO         =   0
     CNT                 =   0
+    CNT_MAX             =   100
+    PROGRESS_BAR_LEN    =   100
 
     def __init__(self):
         self.cap = cv2.VideoCapture(self.CAP_CHANNEL)
@@ -84,27 +88,61 @@ class Suiron:
         imgResult   = img.copy()
         facerect    = self.cascade.detectMultiScale(imgGray,scaleFactor=1.1,minNeighbors=2,minSize=(200,200))
 
+        H,W,C = img.shape
+        self.x = int((W - self.FRAME_WIDTH)/2)
+        self.y = int((H - self.FRAME_HEIGHT)/2)
+
+        #   もし体温が37.0度以上の時は赤、未満は青
+        if self.BODY_TEMP >= 37.0:
+            self.COLOR  =   self.BODY_TEMP_OUT
+        else:
+            self.COLOR  =   self.BODY_TEMP_SAFE
+
         if len(facerect) > 0:
             for (x,y,w,h) in facerect:
                 cv2.rectangle(imgResult,(x,y),(x+w,y+h),self.COLOR,thickness=2)
                 imgTrim = img[y:y+h,x:x+w]
                 str_y,percent,ld = self.maesyori_suiron(imgTrim,self.inputSize)
 
-                cv2.putText(imgResult, str_y+" "+str(percent)+"%", (40, 40), cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
-                cv2.putText(imgResult,"Body TEMP",(40,40*2),cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
-                cv2.putText(imgResult,self.BODY_TEMP,(40,40*3),cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
-                cv2.imshow("Image",imgResult)
+                cv2.rectangle(img,(self.x,self.y),(self.x+self.FRAME_WIDTH,self.y+self.FRAME_HEIGHT),self.COLOR,thickness=10)
+                cv2.putText(img, str_y+" "+str(percent)+"%", (40, 40), cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
+                cv2.putText(img,"Body TEMP",(40,40*2),cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
+                cv2.putText(img,str(self.BODY_TEMP),(40,40*3),cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
+
+
+                cv2.line(
+                        img,
+                        (self.x+self.FRAME_WIDTH+50,                        int((self.y+self.FRAME_HEIGHT)/2)+40*3),
+                        (self.x+self.FRAME_WIDTH+50+self.PROGRESS_BAR_LEN,  int((self.y+self.FRAME_HEIGHT)/2)+40*3),
+                        (204,204,204),
+                        15
+                )
+
+                #   もし、ldが  "-------"ではないとき
+                if ld != "-------":
+                    print("ok")
+                else:
+                    cv2.putText(img,"Please",(self.x+self.FRAME_WIDTH+40,int((self.y+self.FRAME_HEIGHT)/2)+40),cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
+                    cv2.putText(img,"wait.",(self.x+self.FRAME_WIDTH+40,int((self.y+self.FRAME_HEIGHT)/2)+40*2),cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
+                    cv2.line(
+                        img,
+                        (self.x+self.FRAME_WIDTH+50,                                                    int((self.y+self.FRAME_HEIGHT)/2)+40*3),
+                        (self.x+self.FRAME_WIDTH+50+(int(self.PROGRESS_BAR_LEN/self.CNT_MAX))*self.CNT, int((self.y+self.FRAME_HEIGHT)/2)+40*3),
+                        self.COLOR,
+                        15
+                    )
+
+                cv2.imshow("Image",img)
                 cv2.waitKey(self.DELAY_MSEC)
 
                 return ld
         else:
+            #   もし顔が認識できていなかったらCNTをリセットする
+            self.CNT    =   0
             str_y = "-------"
             cv2.rectangle(img,(self.x,self.y),(self.x+self.FRAME_WIDTH,self.y+self.FRAME_HEIGHT),self.COLOR,thickness=10)
             cv2.putText(img, "Set Face", (40*2, 40*2), cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA*2,self.COLOR,thickness=4)
             cv2.imshow("Image",img)
-            H,W,C = img.shape
-            self.x = int((W - self.FRAME_WIDTH)/2)
-            self.y = int((H - self.FRAME_HEIGHT)/2)
             cv2.waitKey(self.DELAY_MSEC)
             return str_y
             
@@ -194,7 +232,7 @@ class Suiron:
 
         s = "-------"
         #   リセット
-        if self.CNT == 10:
+        if self.CNT == self.CNT_MAX:
             max_value   =   max(cnt_list)
             max_index   =   cnt_list.index(max_value)
             if max_index == 0:
