@@ -44,24 +44,24 @@ class Net(torch.nn.Module):
 #             cv2.waitKey(100)
 
 class Suiron:
-    CAP_CHANNEL         = 0
-    WINDOW_WIDTH        = 720
-    WINDOW_HEIGHT       = 480
-    FRAME_WIDTH         = 300
-    FRAME_HEIGHT        = 300
-    x                   = 100
-    y                   = 100
-    COLOR               = (255,0,0)
-    CASCADEPATH         = "haarcascades/haarcascade_frontalface_default.xml"
-    MOJI_OOKISA         = 1.0
+    CAP_CHANNEL         =   0     #   0か1にしてください
+    IS_CAP_INIT         =   0
+    WINDOW_WIDTH        =   720
+    WINDOW_HEIGHT       =   480
+    FRAME_WIDTH         =   300
+    FRAME_HEIGHT        =   300
+    x                   =   100
+    y                   =   100
+    CASCADEPATH         =   "haarcascades/haarcascade_frontalface_default.xml"
+    MOJI_OOKISA         =   1.0
     # ---------- 学習の時と同じパラメータでなければならない ---------- #
-    inputSize           = 160
-    model               = Net(num=6,inputSize=inputSize,Neuron=320)
-    PATH                = "models/nn1.pt"
-    BODY_TEMP           = 36.5
-    BODY_TEMP_SAFE      = (255,0,0)
-    BODY_TEMP_OUT       = (255,0,255)
-    DELAY_MSEC          = 1
+    inputSize           =   160
+    model               =   Net(num=6,inputSize=inputSize,Neuron=320)
+    PATH                =   "models/nn1.pt"
+    BODY_TEMP           =   36.5
+    BODY_TEMP_SAFE      =   (255,0,0)
+    BODY_TEMP_OUT       =   (255,0,255)
+    COLOR               =   BODY_TEMP_SAFE
 
     CNT_ANDO            =   0
     CNT_HIGASHI         =   0
@@ -70,8 +70,11 @@ class Suiron:
     CNT_MASUDA          =   0
     CNT_SUETOMO         =   0
     CNT                 =   0
-    CNT_MAX             =   100
+
+    DELAY_MSEC          =   1
+    CNT_MAX             =   10
     PROGRESS_BAR_LEN    =   100
+
 
     def __init__(self):
         self.cap = cv2.VideoCapture(self.CAP_CHANNEL)
@@ -80,11 +83,27 @@ class Suiron:
         self.cascade = cv2.CascadeClassifier(self.CASCADEPATH)
         self.model.load_state_dict(torch.load(self.PATH))
         self.model.eval()
+
+    def __del__(self):
+        self.cap.release()
+        cv2.destroyAllWindows()
         
 
     def real_time_haar(self):
         success,img = self.cap.read()
-        imgGray     = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        try:
+            imgGray     = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+        except cv2.error:
+            if self.IS_CAP_INIT == 0:
+                self.CAP_CHANNEL    ^=  1
+                self.cap = cv2.VideoCapture(self.CAP_CHANNEL)
+                self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,   self.WINDOW_WIDTH)
+                self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT,  self.WINDOW_HEIGHT)
+            success,img = self.cap.read()
+            imgGray     = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+            self.IS_CAP_INIT        =   1
+
+        
         imgResult   = img.copy()
         facerect    = self.cascade.detectMultiScale(imgGray,scaleFactor=1.1,minNeighbors=2,minSize=(200,200))
 
@@ -120,7 +139,8 @@ class Suiron:
 
                 #   もし、ldが  "-------"ではないとき
                 if ld != "-------":
-                    print("ok")
+                    # print("ok")
+                    pass 
                 else:
                     cv2.putText(img,"Please",(self.x+self.FRAME_WIDTH+40,int((self.y+self.FRAME_HEIGHT)/2)+40),cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
                     cv2.putText(img,"wait.",(self.x+self.FRAME_WIDTH+40,int((self.y+self.FRAME_HEIGHT)/2)+40*2),cv2.FONT_HERSHEY_SIMPLEX,self.MOJI_OOKISA,self.COLOR,thickness=2)
@@ -133,7 +153,10 @@ class Suiron:
                     )
 
                 cv2.imshow("Image",img)
-                cv2.waitKey(self.DELAY_MSEC)
+                if self.DELAY_MSEC != 0:
+                    cv2.waitKey(self.DELAY_MSEC)
+                else:
+                    cv2.waitKey(self.DELAY_MSEC)
 
                 return ld
         else:
